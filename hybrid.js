@@ -268,23 +268,45 @@ function createWorker(self) {
   };
 }
 
-const vertexShaderSource = `
+
+class DisplayMode {
+  static Color = 0
+  static Depth = 1
+  static Default = this.Color
+};
+
+const ShaderHeader = /*glsl*/ `
   #version 300 es
   precision highp float;
   precision highp int;
-  
+
+  // const float INF_F = 1./0.;
+
+  struct CamDistanceCull {
+    float min /* = -4.0f*/, 
+          max /* = INF_F*/;
+  };
+  #line 1
+`.trim();
+
+const vertexShaderSource = /*glsl*/ `
+  ${ShaderHeader}
+
   uniform highp usampler2D u_texture;
   uniform mat4 projection, view;
   uniform vec2 focal;
   uniform vec2 viewport;
   uniform float time;
+  uniform CamDistanceCull camDistCull;
   
   in vec2 position;
   in int index;
   
   out vec4 vColor;
   out vec2 vPosition;
-  
+  out float vCamDist;
+
+
   void main () {
       gl_Position = vec4(0.0, 0.0, 2.0, 1.0);
 
@@ -306,6 +328,10 @@ const vertexShaderSource = `
       
       vec4 cam = view * vec4(uintBitsToFloat(static0.xyz) + tpos, 1);
       vec4 pos = projection * cam;
+
+      //apply distance-to-camera culling
+      float camDist=dot(pos,pos);
+      if (camDist < camDistCull.min || camDist > camDistCull.max) return;
   
       float clip = 1.2 * pos.w;
       if (pos.z < -clip || pos.x < -clip || pos.x > clip || pos.y < -clip || pos.y > clip) return;
@@ -356,26 +382,40 @@ const vertexShaderSource = `
           + position.x * majorAxis / viewport 
           + position.y * minorAxis / viewport, 0.0, 1.0);
 
-      vPosition = position;
+      vPosition = position; 
+      vCamDist = 1./camDist;
   }
   `.trim();
 
-const fragmentShaderSource = `
-  #version 300 es
-  precision highp float;
-  
+const fragmentShaderSource = /* glsl */`
+  ${ShaderHeader}
+
+  uniform int displayMode;
+
   in vec4 vColor;
   in vec2 vPosition;
+  in float vCamDist;
   
   out vec4 fragColor;
   
   void main () {
       float A = -dot(vPosition, vPosition);
-      if (A < -4.0) discard;
+      if (A < -4.) {
+        discard;
+      } 
+
       float B = exp(A) * vColor.a;
-      fragColor = vec4(B * vColor.rgb, B);
+      switch (displayMode){
+      case ${DisplayMode.Depth}:
+        fragColor = vec4(vec3(B * vCamDist), B);
+        break;
+      // case ${DisplayMode.Color}:
+        //fallthru
+      default:
+        fragColor = vec4(B * vColor.rgb, B);
+        break;
+      }
   }
-  
   `.trim();
 
 let defaultViewMatrix = [0.99, 0.01, -0.14, 0, 0.02, 0.99, 0.12, 0, 0.14, -0.12, 0.98, 0, -0.09, -0.26, 0.2, 1];
@@ -387,7 +427,7 @@ async function main() {
   try {
     viewMatrix = JSON.parse(decodeURIComponent(location.hash.slice(1)));
     carousel = false;
-  } catch (err) {}
+  } catch (err) { }
 
   const rowLength = 3 * 4 + 3 * 4 + 4 + 4;
   let splatData = new Uint8Array([]);
@@ -442,6 +482,11 @@ async function main() {
   const u_focal = gl.getUniformLocation(program, "focal");
   const u_view = gl.getUniformLocation(program, "view");
   const u_time = gl.getUniformLocation(program, "time");
+  const u_camDistCull = {
+    min: gl.getUniformLocation(program, "camDistCull.min"),
+    max: gl.getUniformLocation(program, "camDistCull.max"),
+  }
+  const u_displayMode = gl.getUniformLocation(program, "displayMode")
 
   // positions
   const triangleVertices = new Float32Array([-2, -2, 2, -2, 2, 2, -2, 2]);
@@ -742,7 +787,20 @@ async function main() {
 
   let leftGamepadTrigger, rightGamepadTrigger;
 
+  const minMaxRange = {
+    min: document.getElementById("min-range"),
+    max: document.getElementById("max-range"),
+    uploadUniform() {
+      gl.uniform1f(u_camDistCull.min, this.min.value)
+      gl.uniform1f(u_camDistCull.max, this.max.value)
+    }
+  }
+
   const frame = (now) => {
+    minMaxRange.uploadUniform()
+    const displayModeRadio = document.querySelector("input[name=draw-mode]:checked")
+    gl.uniform1i(u_displayMode, eval(displayModeRadio.value))
+
     let inv = invert4(viewMatrix);
     let shiftKey = activeKeys.includes("Shift") || activeKeys.includes("ShiftLeft") || activeKeys.includes("ShiftRight");
 
@@ -905,6 +963,7 @@ async function main() {
     }
     fps.innerText = Math.round(avgFps) + " fps";
     lastFrame = now;
+
     requestAnimationFrame(frame);
   };
 
@@ -950,7 +1009,7 @@ async function main() {
     try {
       viewMatrix = JSON.parse(decodeURIComponent(location.hash.slice(1)));
       carousel = false;
-    } catch (err) {}
+    } catch (err) { }
   });
 
   const preventDefault = (e) => {
