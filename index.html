@@ -165,16 +165,17 @@
       top: 0;
       left: 0;
       width: 100%;
-      height: 90%;
+      height: 100%;
       touch-action: none;
     }
 
     #toolbar {
-      display: block;
       position: absolute;
       bottom: 0;
       width: 100%;
-      height: 10%;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: auto;
     }
 
     #instructions {
@@ -237,11 +238,20 @@
       <input id="max-range" name="max-range" type="number" min="-Infinity" max="Infinty" value="1e6"></input>
     </fieldset>
     <fieldset>
+      <legend> Gaussian Radius Culling </legend>
+      <label for="min-radius">Min</label>
+      <input id="min-radius" name="min-radius" type="number" min="0" max="Infinty" value="0"></input>
+      <label for="max-radius">Max</label>
+      <input id="max-radius" name="max-radius" type="number" min="0" max="Infinty" value="4"></input>
+    </fieldset>
+    <fieldset>
       <legend>Draw Mode</legend>
-      <input id="draw-mode-color" name="draw-mode" type="radio" value="DisplayMode.Color" checked></input>
+      <input id="draw-mode-color" name="draw-mode" type="radio" value="DisplayMode.Color" onkeydown="event.preventDefault()" checked></input>
       <label for="draw-mode-color">Color</label>
-      <input id="draw-mode-depth" name="draw-mode" type="radio" value="DisplayMode.Depth"></input>
+      <input id="draw-mode-depth" name="draw-mode" type="radio" value="DisplayMode.Depth" onkeydown="event.preventDefault()"></input>
       <label for="draw-mode-depth">Depth</label>
+      <input id="draw-mode-depth" name="draw-mode" type="radio" value="DisplayMode.Point" onkeydown="event.preventDefault()"></input>
+      <label for="draw-mode-depth">Point</label>
     </fieldset>
   </div>
   <div id="quality">

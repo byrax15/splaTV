@@ -272,6 +272,7 @@ function createWorker(self) {
 class DisplayMode {
   static Color = 0
   static Depth = 1
+  static Point = 2
   static Default = this.Color
 };
 
@@ -280,9 +281,10 @@ const ShaderHeader = /*glsl*/ `
   precision highp float;
   precision highp int;
 
+  #define M_PI 3.1415926535897932384626433832795
   // const float INF_F = 1./0.;
 
-  struct CamDistanceCull {
+  struct Range {
     float min /* = -4.0f*/, 
           max /* = INF_F*/;
   };
@@ -297,7 +299,7 @@ const vertexShaderSource = /*glsl*/ `
   uniform vec2 focal;
   uniform vec2 viewport;
   uniform float time;
-  uniform CamDistanceCull camDistCull;
+  uniform Range camDistCull;
   
   in vec2 position;
   in int index;
@@ -330,7 +332,7 @@ const vertexShaderSource = /*glsl*/ `
       vec4 pos = projection * cam;
 
       //apply distance-to-camera culling
-      float camDist=dot(pos,pos);
+      float camDist=sqrt(dot(pos,pos));
       if (camDist < camDistCull.min || camDist > camDistCull.max) return;
   
       float clip = 1.2 * pos.w;
@@ -383,7 +385,7 @@ const vertexShaderSource = /*glsl*/ `
           + position.y * minorAxis / viewport, 0.0, 1.0);
 
       vPosition = position; 
-      vCamDist = 1./camDist;
+      vCamDist = 1./(camDist);
   }
   `.trim();
 
@@ -391,26 +393,43 @@ const fragmentShaderSource = /* glsl */`
   ${ShaderHeader}
 
   uniform int displayMode;
+  uniform Range radiusCull;
 
   in vec4 vColor;
   in vec2 vPosition;
   in float vCamDist;
   
   out vec4 fragColor;
+
+  struct ColorMap {
+    vec4 close, far, saturate;
+  };
   
+  const ColorMap colorMap = ColorMap(vec4(1,0,0,1), vec4(0,0,1,1), vec4(1));
+
+  float easing(float x) {
+    // return x < .5 ? 4. * x * x * x : 1. - pow(-2. * x + 2., 3.) / 2.;
+    // return sqrt(1. - pow(x - 1., 2.));
+    return x;
+  }
+
   void main () {
       float A = -dot(vPosition, vPosition);
-      if (A < -4.) {
+      if (A < -radiusCull.max || A > -radiusCull.min) {
         discard;
       } 
-
       float B = exp(A) * vColor.a;
+
       switch (displayMode){
       case ${DisplayMode.Depth}:
-        fragColor = vec4(vec3(B * vCamDist), B);
+        float easing =  easing(vCamDist);
+        vec4 mapped = mix(colorMap.far, colorMap.close, easing);
+        fragColor = vec4(vec3(B * vCamDist), B) * mapped;
         break;
-      // case ${DisplayMode.Color}:
-        //fallthru
+      case ${DisplayMode.Point}:
+        B = exp(-radiusCull.max) * vColor.a;
+        fragColor = vec4(B * vColor.rgb, B);
+        break;
       default:
         fragColor = vec4(B * vColor.rgb, B);
         break;
@@ -487,6 +506,10 @@ async function main() {
     max: gl.getUniformLocation(program, "camDistCull.max"),
   }
   const u_displayMode = gl.getUniformLocation(program, "displayMode")
+  const u_radiusCull = {
+    min: gl.getUniformLocation(program, "radiusCull.min"),
+    max: gl.getUniformLocation(program, "radiusCull.max"),
+  };
 
   // positions
   const triangleVertices = new Float32Array([-2, -2, 2, -2, 2, 2, -2, 2]);
@@ -796,8 +819,19 @@ async function main() {
     }
   }
 
+  const radiusCullRange = {
+    min: document.getElementById("min-radius"),
+    max: document.getElementById("max-radius"),
+    uploadUniform() {
+      gl.uniform1f(u_radiusCull.min, this.min.value)
+      gl.uniform1f(u_radiusCull.max, this.max.value)
+    }
+  }
+
   const frame = (now) => {
     minMaxRange.uploadUniform()
+    radiusCullRange.uploadUniform()
+
     const displayModeRadio = document.querySelector("input[name=draw-mode]:checked")
     gl.uniform1i(u_displayMode, eval(displayModeRadio.value))
 
@@ -1239,4 +1273,9 @@ function translate4(a, x, y, z) {
     a[2] * x + a[6] * y + a[10] * z + a[14],
     a[3] * x + a[7] * y + a[11] * z + a[15],
   ];
+}
+
+function unwrap(value, error) {
+  if (!value) throw error;
+  return value;
 }
