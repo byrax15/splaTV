@@ -272,7 +272,7 @@ function createWorker(self) {
 class DisplayMode {
   static Color = 0
   static Depth = 1
-  static Point = 2
+  static Opaque = 2
   static Default = this.Color
 };
 
@@ -306,8 +306,8 @@ const vertexShaderSource = /*glsl*/ `
   
   out vec4 vColor;
   out vec2 vPosition;
+  flat out vec2 vCenter;
   out float vCamDist;
-
 
   void main () {
       gl_Position = vec4(0.0, 0.0, 2.0, 1.0);
@@ -384,7 +384,7 @@ const vertexShaderSource = /*glsl*/ `
           + position.x * majorAxis / viewport 
           + position.y * minorAxis / viewport, 0.0, 1.0);
 
-      vPosition = position; 
+      vPosition = vCenter = position; 
       vCamDist = 1./(camDist);
   }
   `.trim();
@@ -397,6 +397,7 @@ const fragmentShaderSource = /* glsl */`
 
   in vec4 vColor;
   in vec2 vPosition;
+  flat in vec2 vCenter;
   in float vCamDist;
   
   out vec4 fragColor;
@@ -418,6 +419,7 @@ const fragmentShaderSource = /* glsl */`
       if (A < -radiusCull.max || A > -radiusCull.min) {
         discard;
       } 
+
       float B = exp(A) * vColor.a;
 
       switch (displayMode){
@@ -426,8 +428,8 @@ const fragmentShaderSource = /* glsl */`
         vec4 mapped = mix(colorMap.far, colorMap.close, easing);
         fragColor = vec4(vec3(B * vCamDist), B) * mapped;
         break;
-      case ${DisplayMode.Point}:
-        B = exp(-radiusCull.max) * vColor.a;
+      case ${DisplayMode.Opaque}:
+        B = exp(A) * 1.;
         fragColor = vec4(B * vColor.rgb, B);
         break;
       default:

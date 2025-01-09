@@ -245,13 +245,14 @@
       <input id="max-radius" name="max-radius" type="number" min="0" max="Infinty" value="4"></input>
     </fieldset>
     <fieldset>
-      <legend>Draw Mode</legend>
+      <legend>Display Mode</legend>
       <input id="draw-mode-color" name="draw-mode" type="radio" value="DisplayMode.Color" onkeydown="event.preventDefault()" checked></input>
       <label for="draw-mode-color">Color</label>
       <input id="draw-mode-depth" name="draw-mode" type="radio" value="DisplayMode.Depth" onkeydown="event.preventDefault()"></input>
       <label for="draw-mode-depth">Depth</label>
-      <input id="draw-mode-depth" name="draw-mode" type="radio" value="DisplayMode.Point" onkeydown="event.preventDefault()"></input>
-      <label for="draw-mode-depth">Point</label>
+      <input id="draw-mode-depth" name="draw-mode" type="radio" value="DisplayMode.Opaque" onkeydown="event.preventDefault()"></input>
+      <label for="draw-mode-depth">Opaque</label>
+      <!-- TODO: Combine opaque with an opacity range cutoff -->
     </fieldset>
   </div>
   <div id="quality">
