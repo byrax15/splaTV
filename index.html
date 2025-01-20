@@ -130,6 +130,7 @@
       font-size: large;
       color: red;
       pointer-events: none;
+      z-index: 99999;
     }
 
     details {
@@ -231,7 +232,11 @@
   <canvas id="canvas"></canvas>
   <div id="toolbar">
     <fieldset>
-      <legend> Camera Distance Culling </legend>
+      <legend>Scene File (Browse or drop)</legend>
+      <input id="scene-file" type="file" accept=".ply,.spltav,.json" />
+    </fieldset>
+    <fieldset>
+      <legend>Camera Distance Culling </legend>
       <label for="min-range">Min</label>
       <input id="min-range" name="min-range" type="number" min="-Infinity" max="Infinty" value="-1e6"></input>
       <label for="max-range">Max</label>
@@ -246,11 +251,14 @@
     </fieldset>
     <fieldset>
       <legend>Display Mode</legend>
-      <input id="draw-mode-color" name="draw-mode" type="radio" value="DisplayMode.Color" onkeydown="event.preventDefault()" checked></input>
+      <input id="draw-mode-color" name="draw-mode" type="radio" value="DisplayMode.Color"
+        onkeydown="event.preventDefault()" checked></input>
       <label for="draw-mode-color">Color</label>
-      <input id="draw-mode-depth" name="draw-mode" type="radio" value="DisplayMode.Depth" onkeydown="event.preventDefault()"></input>
+      <input id="draw-mode-depth" name="draw-mode" type="radio" value="DisplayMode.Depth"
+        onkeydown="event.preventDefault()"></input>
       <label for="draw-mode-depth">Depth</label>
-      <input id="draw-mode-depth" name="draw-mode" type="radio" value="DisplayMode.Opaque" onkeydown="event.preventDefault()"></input>
+      <input id="draw-mode-depth" name="draw-mode" type="radio" value="DisplayMode.Opaque"
+        onkeydown="event.preventDefault()"></input>
       <label for="draw-mode-depth">Opaque</label>
       <!-- TODO: Combine opaque with an opacity range cutoff -->
     </fieldset>

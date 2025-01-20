@@ -273,6 +273,8 @@ class DisplayMode {
   static Color = 0
   static Depth = 1
   static Opaque = 2
+  static Motion0 = 3
+  static Motion1 = 4
   static Default = this.Color
 };
 
@@ -284,10 +286,13 @@ const ShaderHeader = /*glsl*/ `
   #define M_PI 3.1415926535897932384626433832795
   // const float INF_F = 1./0.;
 
+  uniform int displayMode;
+
   struct Range {
     float min /* = -4.0f*/, 
           max /* = INF_F*/;
   };
+
   #line 1
 `.trim();
 
@@ -306,7 +311,7 @@ const vertexShaderSource = /*glsl*/ `
   
   out vec4 vColor;
   out vec2 vPosition;
-  flat out vec2 vCenter;
+  flat out vec2 vColorOverride;
   out float vCamDist;
 
   void main () {
@@ -322,8 +327,11 @@ const vertexShaderSource = /*glsl*/ `
       uvec4 motion0 = texelFetch(u_texture, ivec2(((uint(index) & 0x3ffu) << 2) | 2u, uint(index) >> 10), 0);
       uvec4 static0 = texelFetch(u_texture, ivec2(((uint(index) & 0x3ffu) << 2), uint(index) >> 10), 0);
 
-      vec2 m0 = unpackHalf2x16(motion0.x), m1 = unpackHalf2x16(motion0.y), m2 = unpackHalf2x16(motion0.z), 
-           m3 = unpackHalf2x16(motion0.w), m4 = unpackHalf2x16(motion1.x); 
+      vec2 m0 = unpackHalf2x16(motion0.x), 
+           m1 = unpackHalf2x16(motion0.y), 
+           m2 = unpackHalf2x16(motion0.z), 
+           m3 = unpackHalf2x16(motion0.w), 
+           m4 = unpackHalf2x16(motion1.x); 
       
       vec4 trot = vec4(unpackHalf2x16(motion1.y).xy, unpackHalf2x16(motion1.z).xy) * dt;
       vec3 tpos = (vec3(m0.xy, m1.x) * dt + vec3(m1.y, m2.xy) * dt*dt + vec3(m3.xy, m4.x) * dt*dt*dt);
@@ -369,14 +377,6 @@ const vertexShaderSource = /*glsl*/ `
       vec2 minorAxis = min(sqrt(2.0 * lambda2), 1024.0) * vec2(diagonalVector.y, -diagonalVector.x);
       
       uint rgba = static1.w;
-      vColor = 
-        clamp(pos.z/pos.w+1.0, 0.0, 1.0) * 
-        vec4(1.0, 1.0, 1.0, topacity) *
-        vec4(
-          (rgba) & 0xffu, 
-          (rgba >> 8) & 0xffu, 
-          (rgba >> 16) & 0xffu, 
-          (rgba >> 24) & 0xffu) / 255.0;
 
       vec2 vCenter = vec2(pos) / pos.w;
       gl_Position = vec4(
@@ -386,18 +386,31 @@ const vertexShaderSource = /*glsl*/ `
 
       vPosition = vCenter = position; 
       vCamDist = 1./(camDist);
+
+      switch(displayMode){
+      case ${DisplayMode.Depth}:
+        vColorOverride = 
+          clamp(pos.z/pos.w+1.0, 0.0, 1.0) * 
+          vec4(1.0, 1.0, 1.0, topacity) *
+          vec4(
+            (rgba) & 0xffu, 
+            (rgba >> 8) & 0xffu, 
+            (rgba >> 16) & 0xffu, 
+            (rgba >> 24) & 0xffu) / 255.0;
+      default:
+        break;
+      }
   }
   `.trim();
 
 const fragmentShaderSource = /* glsl */`
   ${ShaderHeader}
 
-  uniform int displayMode;
   uniform Range radiusCull;
 
   in vec4 vColor;
   in vec2 vPosition;
-  flat in vec2 vCenter;
+  flat in vec2 vColorOverride;
   in float vCamDist;
   
   out vec4 fragColor;
@@ -1050,16 +1063,19 @@ async function main() {
 
   const preventDefault = (e) => {
     e.preventDefault();
-    e.stopPropagation();
+    //e.stopPropagation();
   };
   document.addEventListener("dragenter", preventDefault);
   document.addEventListener("dragover", preventDefault);
   document.addEventListener("dragleave", preventDefault);
   document.addEventListener("drop", (e) => {
     e.preventDefault();
-    e.stopPropagation();
     selectFile(e.dataTransfer.files[0]);
   });
+  document.querySelector("#scene-file").addEventListener("change", function(e) {
+    e.preventDefault();
+    selectFile(e.target.files[0]);
+  })
 
   let lastVertexCount = -1;
   const chunkHandler = (chunk, buffer, remaining, chunks) => {
