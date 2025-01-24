@@ -236,18 +236,25 @@
       <input id="scene-file" type="file" accept=".ply,.splatv,.json" />
     </fieldset>
     <fieldset>
-      <legend>Camera Distance Culling </legend>
+      <legend>Camera Distance Culling</legend>
       <label for="min-range">Min</label>
       <input id="min-range" name="min-range" type="number" min="-Infinity" max="Infinty" value="-1e6"></input>
       <label for="max-range">Max</label>
       <input id="max-range" name="max-range" type="number" min="-Infinity" max="Infinty" value="1e6"></input>
     </fieldset>
     <fieldset>
-      <legend> Gaussian Radius Culling </legend>
+      <legend>Gaussian Radius Culling</legend>
       <label for="min-radius">Min</label>
       <input id="min-radius" name="min-radius" type="number" min="0" max="Infinty" value="0"></input>
       <label for="max-radius">Max</label>
       <input id="max-radius" name="max-radius" type="number" min="0" max="Infinty" value="4"></input>
+    </fieldset>
+    <fieldset>
+      <legend>Gaussian Opacity Culling</legend>
+      <label for="min-opacity">Min</label>
+      <input id="min-opacity" name="min-opacity" type="range" min="0" max="1" step="0.01" value="0"></input>
+      <label for="max-opacity">Max</label>
+      <input id="max-opacity" name="max-opacity" type="range" min="0" max="1" step="0.01" value="1"></input>
     </fieldset>
     <fieldset>
       <legend>Display Mode</legend>

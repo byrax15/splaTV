@@ -321,6 +321,7 @@ const vertexShaderSource = /*glsl*/ `
   uniform vec2 viewport;
   uniform float time;
   uniform Range camDistCull;
+  uniform Range opacityCull;
   
   in vec2 position;
   in int index;
@@ -339,6 +340,7 @@ const vertexShaderSource = /*glsl*/ `
 
       float topacity = exp(-1.0 * pow(dt / trbf.y, 2.0));
       if(topacity < 0.02) return;
+      if (topacity < opacityCull.min || topacity > opacityCull.max) return;
 
       uvec4 motion0 = texelFetch(u_texture, ivec2(((uint(index) & 0x3ffu) << 2) | 2u, uint(index) >> 10), 0);
       uvec4 static0 = texelFetch(u_texture, ivec2(((uint(index) & 0x3ffu) << 2), uint(index) >> 10), 0);
@@ -538,6 +540,11 @@ async function main() {
     min: gl.getUniformLocation(program, "radiusCull.min"),
     max: gl.getUniformLocation(program, "radiusCull.max"),
   };
+
+  const u_opacityCull = {
+    min: gl.getUniformLocation(program, "opacityCull.min"),
+    max: gl.getUniformLocation(program, "opacityCull.max"),
+  }
 
   // positions
   const triangleVertices = new Float32Array([-2, -2, 2, -2, 2, 2, -2, 2]);
@@ -856,9 +863,19 @@ async function main() {
     }
   }
 
+  const opacityCullRange = {
+    min: document.getElementById("min-opacity"),
+    max: document.getElementById("max-opacity"),
+    uploadUniform() {
+      gl.uniform1f(u_opacityCull.min, this.min.value)
+      gl.uniform1f(u_opacityCull.max, this.max.value)
+    }
+  }
+
   const frame = (now) => {
     minMaxRange.uploadUniform()
     radiusCullRange.uploadUniform()
+    opacityCullRange.uploadUniform()
 
     const displayModeRadio = document.querySelector("#draw-mode")
     gl.uniform1i(u_displayMode, eval(displayModeRadio.value))
