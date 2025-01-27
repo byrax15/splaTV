@@ -294,6 +294,10 @@ const ShaderHeader = /*glsl*/ `
           max /* = INF_F*/;
   };
 
+  struct AABB {
+    vec3 min, max;
+  };
+
   uniform int displayMode;
 
   vec3 rescale(vec3 v){
@@ -322,6 +326,7 @@ const vertexShaderSource = /*glsl*/ `
   uniform float time;
   uniform Range camDistCull;
   uniform Range opacityCull;
+  uniform AABB aabbCull;
   
   in vec2 position;
   in int index;
@@ -351,7 +356,15 @@ const vertexShaderSource = /*glsl*/ `
       vec4 trot = vec4(unpackHalf2x16(motion1.y).xy, unpackHalf2x16(motion1.z).xy) * dt;
       vec3 tpos = (vec3(m0.xy, m1.x) * dt + vec3(m1.y, m2.xy) * dt*dt + vec3(m3.xy, m4.x) * dt*dt*dt);
       
-      vec4 cam = view * vec4(uintBitsToFloat(static0.xyz) + tpos, 1);
+
+      vec3 anchor = uintBitsToFloat(static0.xyz) + tpos;
+      // apply aabb culling
+      if ( anchor.x < aabbCull.min.x || anchor.x > aabbCull.max.x 
+        || anchor.y < aabbCull.min.y || anchor.y > aabbCull.max.y 
+        || anchor.z < aabbCull.min.z || anchor.z > aabbCull.max.z) 
+        return;
+
+      vec4 cam = view * vec4(anchor, 1);
       vec4 pos = projection * cam;
 
       //apply distance-to-camera culling
@@ -544,6 +557,11 @@ async function main() {
   const u_opacityCull = {
     min: gl.getUniformLocation(program, "opacityCull.min"),
     max: gl.getUniformLocation(program, "opacityCull.max"),
+  }
+
+  const u_aabbCull = {
+    min: gl.getUniformLocation(program, "aabbCull.min"),
+    max: gl.getUniformLocation(program, "aabbCull.max"),
   }
 
   // positions
@@ -843,6 +861,12 @@ async function main() {
     console.log("Gamepad disconnected");
   });
 
+  window.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      document.activeElement.blur();
+    }
+  })
+
   let leftGamepadTrigger, rightGamepadTrigger;
 
   const minMaxRange = {
@@ -872,10 +896,21 @@ async function main() {
     }
   }
 
+  const aabbCull = {
+    min: [document.getElementById("aabb-min-x"), document.getElementById("aabb-min-y"), document.getElementById("aabb-min-z")],
+    max: [document.getElementById("aabb-max-x"), document.getElementById("aabb-max-y"), document.getElementById("aabb-max-z")],
+    uploadUniform() {
+      if (!u_aabbCull.min || !u_aabbCull.max) return;
+      gl.uniform3fv(u_aabbCull.min, new Float32Array(this.min.map(e => e.value)))
+      gl.uniform3fv(u_aabbCull.max, new Float32Array(this.max.map(e => e.value)))
+    }
+  }
+
   const frame = (now) => {
     minMaxRange.uploadUniform()
     radiusCullRange.uploadUniform()
     opacityCullRange.uploadUniform()
+    aabbCull.uploadUniform()
 
     const displayModeRadio = document.querySelector("#draw-mode")
     gl.uniform1i(u_displayMode, eval(displayModeRadio.value))

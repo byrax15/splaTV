@@ -232,8 +232,22 @@
   <canvas id="canvas"></canvas>
   <div id="toolbar">
     <fieldset>
-      <legend>Scene File (Browse or drop)</legend>
-      <input id="scene-file" type="file" accept=".ply,.splatv,.json" />
+      <legend>AABB Culling Min</legend>
+      <label for="aabb-min-x">X</label>
+      <input id="aabb-min-x" name="aabb-min-x" type="number" min="-Infinty" max="Infinty" value="-1e6" step=".1"></input>
+      <label for="aabb-min-y">Y</label>
+      <input id="aabb-min-y" name="aabb-min-y" type="number" min="-Infinty" max="Infinty" value="-1e6" step=".1"></input>
+      <label for="aabb-min-z">Z</label>
+      <input id="aabb-min-z" name="aabb-min-z" type="number" min="-Infinty" max="Infinty" value="-1e6" step=".1"></input>
+    </fieldset>
+    <fieldset>
+      <legend>AABB Culling Max</legend>
+      <label for="aabb-max-x">X</label>
+      <input id="aabb-max-x" name="aabb-max-x" type="number" min="-Infinty" max="Infinty" value="1e6" step=".1"></input>
+      <label for="aabb-max-y">Y</label>
+      <input id="aabb-max-y" name="aabb-max-y" type="number" min="-Infinty" max="Infinty" value="1e6" step=".1"></input>
+      <label for="aabb-max-z">Z</label>
+      <input id="aabb-max-z" name="aabb-max-z" type="number" min="-Infinty" max="Infinty" value="1e6" step=".1"></input>
     </fieldset>
     <fieldset>
       <legend>Camera Distance Culling</legend>
@@ -268,6 +282,10 @@
         <option value="DisplayMode.TRotZ">Temporal Rotation Z</option>
         <option value="DisplayMode.TRotW">Temporal Rotation W</option>
       </select>
+    </fieldset>
+    <fieldset>
+      <legend>Scene File (Browse or drop)</legend>
+      <input id="scene-file" type="file" accept=".ply,.splatv,.json" />
     </fieldset>
   </div>
   <div id="quality">
