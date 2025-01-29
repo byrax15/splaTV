@@ -907,6 +907,20 @@ async function main() {
   }
 
   const timeline = document.querySelector("#timeline");
+  const playpause = document.querySelector("#playpause");
+  let time = 0;
+  const nextTime = () => {
+    switch (playpause.dataset.state) {
+      case 'play':
+        time = Math.sin(Date.now() / 1000) / 2 + 1 / 2
+        break
+      case 'pause':
+        time = timeline.value
+        break
+    }
+    return time
+  }
+
   const frame = (now) => {
     minMaxRange.uploadUniform()
     radiusCullRange.uploadUniform()
@@ -1061,8 +1075,8 @@ async function main() {
     if (vertexCount > 0) {
       document.getElementById("spinner").style.display = "none";
       gl.uniformMatrix4fv(u_view, false, actualViewMatrix);
-      
-      const time = Math.sin(Date.now() / 1000) / 2 + 1 / 2
+
+      const time = nextTime();
       gl.uniform1f(u_time, time);
       timeline.value = time;
 

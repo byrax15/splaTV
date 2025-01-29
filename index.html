@@ -10,7 +10,20 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 
   <script src="hybrid.js" defer>  </script>
-
+  <script defer>
+    /**
+     * @param {string} element
+     * @param {string} a
+     * @param {string} b
+     */
+    function toggleText(element, a, b) {
+      if (element === a) {
+        element = b;
+      } else {
+        element = a;
+      }
+    }
+  </script>
   <style>
     body {
       overflow: hidden;
@@ -204,6 +217,12 @@
       padding: 10px;
       display: none;
     }
+
+    .timeline {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 7fr;
+      grid-template-rows: auto;
+    }
   </style>
 </head>
 
@@ -253,10 +272,26 @@
         <option value="DisplayMode.TRotW">Temporal Rotation W</option>
       </select>
     </fieldset>
-    <fieldset>
+    <fieldset class="timeline">
       <legend>Timeline</legend>
-      <!-- <input id="timeline" type="range" min="0" max="1" step="0.01" value="0" disabled></input> -->
-      <input id="timeline" type="range" min="0" max="1" step="1e-6" disabled />
+      <button id="playpause" data-state="play" onclick=" 
+      let timeline=document.querySelectorAll('#timeline,#backward,#forward')
+      switch (this.dataset.state){
+        case 'play':
+          this.dataset.state = 'pause'
+          this.textContent = '⏸️'
+          timeline.forEach(e=>e.disabled=false)
+          break
+        case 'pause':
+          this.dataset.state = 'play'
+          this.textContent = '▶️'
+          timeline.forEach(e=>e.disabled=true)
+          break
+      }
+      ">▶️</button>
+      <button id="backward" disabled onclick="document.querySelector('#timeline').value-=0.05">⏪</button>
+      <button id="forward" disabled onclick="document.querySelector('#timeline').value-=-0.05">⏩</button>
+      <input id="timeline" disabled type="range" min="0" max="1" step="1e-6" />
     </fieldset>
   </div>
   <div class="toolbar" style="bottom: 0px;">
