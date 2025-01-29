@@ -5,6 +5,12 @@
             "name": "localhost:5500",
             "request": "launch",
             "url": "http://localhost:5500"
+        },
+        {
+            "type": "msedge",
+            "name": "localhost:18080",
+            "request": "launch",
+            "url": "http://localhost:18080"
         }
     ]
 }
