@@ -148,7 +148,7 @@
 
     #quality {
       position: absolute;
-      bottom: 10px;
+      top: 25px;
       z-index: 999;
       right: 10px;
     }
@@ -170,9 +170,8 @@
       touch-action: none;
     }
 
-    #toolbar {
+    .toolbar {
       position: absolute;
-      bottom: 0;
       width: 100%;
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -230,15 +229,48 @@
     </div>
   </div>
   <canvas id="canvas"></canvas>
-  <div id="toolbar">
+  <div id="quality">
+    <span id="fps"></span>
+  </div>
+  <div id="caminfo">
+    <span id="camid"></span>
+  </div>
+  <div class="toolbar" style="top: 0px;">
+    <fieldset>
+      <legend>Scene File (Browse or drop)</legend>
+      <input id="scene-file" type="file" accept=".ply,.splatv,.json" />
+    </fieldset>
+    <fieldset>
+      <legend>Display Mode</legend>
+      <select id="draw-mode">
+        <option value="DisplayMode.Color">Color</option>
+        <option value="DisplayMode.Depth">Depth</option>
+        <option value="DisplayMode.Opaque">Opaque</option>
+        <option value="DisplayMode.TPos">Temporal Position</option>
+        <option value="DisplayMode.TRotX">Temporal Rotation X</option>
+        <option value="DisplayMode.TRotY">Temporal Rotation Y</option>
+        <option value="DisplayMode.TRotZ">Temporal Rotation Z</option>
+        <option value="DisplayMode.TRotW">Temporal Rotation W</option>
+      </select>
+    </fieldset>
+    <fieldset>
+      <legend>Timeline</legend>
+      <!-- <input id="timeline" type="range" min="0" max="1" step="0.01" value="0" disabled></input> -->
+      <input id="timeline" type="range" min="0" max="1" step="1e-6" disabled />
+    </fieldset>
+  </div>
+  <div class="toolbar" style="bottom: 0px;">
     <fieldset>
       <legend>AABB Culling Min</legend>
       <label for="aabb-min-x">X</label>
-      <input id="aabb-min-x" name="aabb-min-x" type="number" min="-Infinty" max="Infinty" value="-1e6" step=".1"></input>
+      <input id="aabb-min-x" name="aabb-min-x" type="number" min="-Infinty" max="Infinty" value="-1e6"
+        step=".1"></input>
       <label for="aabb-min-y">Y</label>
-      <input id="aabb-min-y" name="aabb-min-y" type="number" min="-Infinty" max="Infinty" value="-1e6" step=".1"></input>
+      <input id="aabb-min-y" name="aabb-min-y" type="number" min="-Infinty" max="Infinty" value="-1e6"
+        step=".1"></input>
       <label for="aabb-min-z">Z</label>
-      <input id="aabb-min-z" name="aabb-min-z" type="number" min="-Infinty" max="Infinty" value="-1e6" step=".1"></input>
+      <input id="aabb-min-z" name="aabb-min-z" type="number" min="-Infinty" max="Infinty" value="-1e6"
+        step=".1"></input>
     </fieldset>
     <fieldset>
       <legend>AABB Culling Max</legend>
@@ -259,9 +291,9 @@
     <fieldset>
       <legend>Gaussian Radius Culling</legend>
       <label for="min-radius">Min</label>
-      <input id="min-radius" name="min-radius" type="number" min="0" max="Infinty" value="0"></input>
+      <input id="min-radius" name="min-radius" type="range" value="0" min="0" max="7" step="0.5"></input>
       <label for="max-radius">Max</label>
-      <input id="max-radius" name="max-radius" type="number" min="0" max="Infinty" value="4"></input>
+      <input id="max-radius" name="max-radius" type="range" value="4" min="0" max="7" step="0.5"></input>
     </fieldset>
     <fieldset>
       <legend>Gaussian Opacity Culling</legend>
@@ -270,31 +302,7 @@
       <label for="max-opacity">Max</label>
       <input id="max-opacity" name="max-opacity" type="range" min="0" max="1" step="0.01" value="1"></input>
     </fieldset>
-    <fieldset>
-      <legend>Display Mode</legend>
-      <select id="draw-mode">
-        <option value="DisplayMode.Color">Color</option>
-        <option value="DisplayMode.Depth">Depth</option>
-        <option value="DisplayMode.Opaque">Opaque</option>
-        <option value="DisplayMode.TPos">Temporal Position</option>
-        <option value="DisplayMode.TRotX">Temporal Rotation X</option>
-        <option value="DisplayMode.TRotY">Temporal Rotation Y</option>
-        <option value="DisplayMode.TRotZ">Temporal Rotation Z</option>
-        <option value="DisplayMode.TRotW">Temporal Rotation W</option>
-      </select>
-    </fieldset>
-    <fieldset>
-      <legend>Scene File (Browse or drop)</legend>
-      <input id="scene-file" type="file" accept=".ply,.splatv,.json" />
-    </fieldset>
   </div>
-  <div id="quality">
-    <span id="fps"></span>
-  </div>
-  <div id="caminfo">
-    <span id="camid"></span>
-  </div>
-
 </body>
 
 </html>
