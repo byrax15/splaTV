@@ -262,32 +262,33 @@
     <fieldset>
       <legend>Display Mode</legend>
       <select id="draw-mode">
-        <option value="DisplayMode.Color">Color</option>
-        <option value="DisplayMode.Depth">Depth</option>
-        <option value="DisplayMode.Opaque">Opaque</option>
-        <option value="DisplayMode.TPos">Temporal Position</option>
-        <option value="DisplayMode.TRotX">Temporal Rotation X</option>
-        <option value="DisplayMode.TRotY">Temporal Rotation Y</option>
-        <option value="DisplayMode.TRotZ">Temporal Rotation Z</option>
-        <option value="DisplayMode.TRotW">Temporal Rotation W</option>
+        <option value="Color">Color</option>
+        <option value="Depth">Depth</option>
+        <option value="Opaque">Opaque</option>
+        <option value="Density">Density</option>
+        <option value="TPos">Temporal Position</option>
+        <option value="TRotX">Temporal Rotation X</option>
+        <option value="TRotY">Temporal Rotation Y</option>
+        <option value="TRotZ">Temporal Rotation Z</option>
+        <option value="TRotW">Temporal Rotation W</option>
       </select>
     </fieldset>
     <fieldset class="timeline">
       <legend>Timeline</legend>
       <button id="playpause" data-state="play" onclick=" 
-      let timeline=document.querySelectorAll('#timeline,#backward,#forward')
-      switch (this.dataset.state){
-        case 'play':
-          this.dataset.state = 'pause'
-          this.textContent = '⏸️'
-          timeline.forEach(e=>e.disabled=false)
-          break
-        case 'pause':
-          this.dataset.state = 'play'
-          this.textContent = '▶️'
-          timeline.forEach(e=>e.disabled=true)
-          break
-      }
+        let timeline=document.querySelectorAll('#timeline,#backward,#forward')
+        switch (this.dataset.state){
+          case 'play':
+            this.dataset.state = 'pause'
+            this.textContent = '⏸️'
+            timeline.forEach(e=>e.disabled=false)
+            break
+          case 'pause':
+            this.dataset.state = 'play'
+            this.textContent = '▶️'
+            timeline.forEach(e=>e.disabled=true)
+            break
+        }
       ">▶️</button>
       <button id="backward" disabled onclick="document.querySelector('#timeline').value-=0.05">⏪</button>
       <button id="forward" disabled onclick="document.querySelector('#timeline').value-=-0.05">⏩</button>
