@@ -1,4 +1,4 @@
-import * as density from "./Density.mjs";
+import * as density from "./density.mjs";
 
 let sortRunning;
 let vertexCount = 0;
@@ -6,12 +6,14 @@ let viewProj;
 let lastProj = [];
 let depthIndex = new Uint32Array();
 let lastVertexCount = 0;
+
 /** @type { undefined | Float32Array } */
 let positions;
-let voxels;
 
 var _floatView = new Float32Array(1);
 var _int32View = new Int32Array(_floatView.buffer);
+
+let densityHashGrid
 
 function floatToHalf(float) {
   _floatView[0] = float;
@@ -250,17 +252,39 @@ self.onmessage = (e) => {
     vertexCount = processPlyBuffer(e.data.ply);
   }
   else if (e.data.density) {
-    console.time("Density");
-    if (!positions) console.log(`Density: 0 gausians in 0 voxels`);
-    let sceneSpace = new density.Space(
-      [Infinity, Infinity, Infinity], [-Infinity, -Infinity, -Infinity]
-    )
-    for (let i = vertexCount; i-- > 0;) {
-      const p = positions.slice(3 * i, 3 * i + 3);
-      sceneSpace.min.forEach((k, i) => sceneSpace.min[i] = Math.min(k, p[i]));
-      sceneSpace.max.forEach((k, i) => sceneSpace.max[i] = Math.max(k, p[i]));
+    try {
+      console.log("Density: Start");
+      console.time("Density");
+
+      if (!positions) console.log(`Density: 0 gausians in 0 voxels`);
+      let sceneSpace = new density.Space([Infinity, Infinity, Infinity], [-Infinity, -Infinity, -Infinity])
+      for (let i = vertexCount; i-- > 0;) {
+        const p = positions.slice(3 * i, 3 * i + 3);
+        sceneSpace.min.forEach((k, i) => sceneSpace.min[i] = Math.min(k, p[i]));
+        sceneSpace.max.forEach((k, i) => sceneSpace.max[i] = Math.max(k, p[i]));
+      }
+      sceneSpace.scale = (1 + 1e-6) // prevents HashGrid.findVoxelIndex from returning out of bounds when the point is on the edge
+
+      densityHashGrid = new density.HashGrid(sceneSpace);
+      for (let i = vertexCount; i-- > 0;) {
+        const p = positions.slice(3 * i, 3 * i + 3);
+        const voxel = densityHashGrid.findVoxel(p);
+        ++voxel.numGaussians;
+      }
+
+      console.log("Density", densityHashGrid)
+      const [x, y, z] = density.HashGrid.numberVoxel
+      for (let i = 0; i < x; ++i) {
+        for (let j = 0; j < y; ++j) {
+          for (let k = 0; k < z; ++k) {
+            const voxel = densityHashGrid.voxels[i][j][k];
+            console.log("Density", [i, j, k], { ...voxel, density: voxel.density });
+          }
+        }
+      }
+
+    } finally {
+      console.timeEnd("Density");
     }
-    console.log(`Density: Space{${sceneSpace.min}, ${sceneSpace.max}}`)
-    console.timeEnd("Density");
   }
 };
