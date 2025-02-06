@@ -1,6 +1,4 @@
-import { glMatrix, vec4 } from "./node_modules/gl-matrix/esm/index.js";
-import { add, mul, scale, sub } from "./node_modules/gl-matrix/esm/vec4.js";
-glMatrix.setMatrixArrayType(Array);
+import { vec3 } from './vector.mjs';
 
 export class Space {
     /**
@@ -82,13 +80,15 @@ export class HashGrid {
 export class DensityColor {
     constructor(hashgrid) {
         this.density = {
+            /** @type {number[]} */
             values: new Array(hashgrid.voxelVolume),
             min: Infinity,
             max: -Infinity,
         };
         this.color = {
+            /** @type {number[]} */
             values: new Array(hashgrid.voxelVolume),
-            min: [300, 1., .5], //hsl
+            min: [300, 1., .1], //hsl
             max: [60., 1., .5], //hsl
         };
 
@@ -111,8 +111,8 @@ export class DensityColor {
             for (let i of hashgrid.voxels) {
                 for (let j of i) {
                     for (let k of j) {
-                        color.values[flatIndex++] = vec4.lerp(
-                            vec4.create(),
+                        color.values[flatIndex++] = vec3.lerp(
+                            vec3.create(),
                             color.min,
                             color.max,
                             (k.density - density.min) / (density.max - density.min)

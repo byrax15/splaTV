@@ -1,5 +1,6 @@
 import * as density from "./density.mjs";
 import { DisplayMode } from "./display-mode.mjs";
+import { hslToRgb } from "./vector.mjs";
 
 let cameras = [
   {
@@ -194,17 +195,21 @@ async function main() {
       let densityHashGrid = e.data;
       console.log(densityHashGrid)
 
-      for (const color of densityHashGrid.color.values) {
+      for (let i = 0; i < densityHashGrid.density.values.length; i++) {
+        const density = densityHashGrid.density.values[i];
+        const color = densityHashGrid.color.values[i];
+        const [r, g, b] = hslToRgb(color);
+        splatData = new Uint8Array([...splatData, ...new Uint8Array(density), r, g, b, 255]);
+      }
+
+      for (let i = 0; i < densityHashGrid.density.values.length; i++) {
+        const density = densityHashGrid.density.values[i];
+        const color = densityHashGrid.color.values[i];
         const div = document.createElement("div");
         div.className = 'color-display';
-        div.style.backgroundColor = ((h,s,l)=>`hsl(${h},${s*100}%,${l*100}%`)(...color);
-
-        for (const component of color) {
-          const p = document.createElement("p");
-          p.textContent = component.toFixed(2);
-          div.appendChild(p)
-        }
-
+        const hsl = ((h, s, l) => `hsl(${h},${s * 100}%,${l * 100}%`)(...color);
+        div.style.backgroundColor = hsl;
+        div.textContent = density.toExponential(2);
         document.querySelector("#message").appendChild(div);
       }
       setTimeout(() => document.querySelector("#message").innerText = "", 5000)
