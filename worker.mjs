@@ -283,6 +283,8 @@ self.onmessage = (e) => {
         }
       }
 
+      self.postMessage({ density: densityHashGrid });
+
     } finally {
       console.timeEnd("Density");
     }
