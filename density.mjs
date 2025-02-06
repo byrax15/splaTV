@@ -1,4 +1,6 @@
-import * as glm from '/node_modules/gl-matrix/esm/index.js'
+import { glMatrix, vec4 } from "./node_modules/gl-matrix/esm/index.js";
+import { add, mul, scale, sub } from "./node_modules/gl-matrix/esm/vec4.js";
+glMatrix.setMatrixArrayType(Array);
 
 export class Space {
     /**
@@ -67,6 +69,55 @@ export class HashGrid {
                             this.space.max.map((max, dim) => this.space.min[dim] + ([i, j, k][dim] + 1) * this.voxelSize[dim])
                         )
                     );
+                }
+            }
+        }
+    }
+
+    toMessage() {
+        return new DensityColor(this);
+    }
+}
+
+export class DensityColor {
+    constructor(hashgrid) {
+        this.density = {
+            values: new Array(hashgrid.voxelVolume),
+            min: Infinity,
+            max: -Infinity,
+        };
+        this.color = {
+            values: new Array(hashgrid.voxelVolume),
+            min: [300, 1., .5], //hsl
+            max: [60., 1., .5], //hsl
+        };
+
+        let { density, color } = this
+        {
+            let flatIndex = 0
+            for (let i of hashgrid.voxels) {
+                for (let j of i) {
+                    for (let k of j) {
+                        density.values[flatIndex++] = k.density;
+                        density.min = Math.min(density.min, k.density);
+                        density.max = Math.max(density.max, k.density);
+                    }
+                }
+            }
+        }
+
+        {
+            let flatIndex = 0
+            for (let i of hashgrid.voxels) {
+                for (let j of i) {
+                    for (let k of j) {
+                        color.values[flatIndex++] = vec4.lerp(
+                            vec4.create(),
+                            color.min,
+                            color.max,
+                            (k.density - density.min) / (density.max - density.min)
+                        );
+                    }
                 }
             }
         }

@@ -189,13 +189,33 @@ async function main() {
       gl.bufferData(gl.ARRAY_BUFFER, depthIndex, gl.DYNAMIC_DRAW);
       vertexCount = e.data.vertexCount;
     }
+    else if (['density', 'color'].every(k => k in e.data)) {
+      /** @type {density.DensityColor} */
+      let densityHashGrid = e.data;
+      console.log(densityHashGrid)
+
+      for (const color of densityHashGrid.color.values) {
+        const div = document.createElement("div");
+        div.className = 'color-display';
+        div.style.backgroundColor = ((h,s,l)=>`hsl(${h},${s*100}%,${l*100}%`)(...color);
+
+        for (const component of color) {
+          const p = document.createElement("p");
+          p.textContent = component.toFixed(2);
+          div.appendChild(p)
+        }
+
+        document.querySelector("#message").appendChild(div);
+      }
+      setTimeout(() => document.querySelector("#message").innerText = "", 5000)
+    }
   };
 
   let activeKeys = [];
   let currentCameraIndex = 0;
 
   window.addEventListener("keydown", (e) => {
-    // if (document.activeElement != document.body) return;
+    // if (document.activeElement != document.body) return;`
     carousel = false;
     if (!activeKeys.includes(e.code)) activeKeys.push(e.code);
     if (/\d/.test(e.key)) {

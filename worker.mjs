@@ -13,8 +13,6 @@ let positions;
 var _floatView = new Float32Array(1);
 var _int32View = new Int32Array(_floatView.buffer);
 
-let densityHashGrid
-
 function floatToHalf(float) {
   _floatView[0] = float;
   var f = _int32View[0];
@@ -265,7 +263,7 @@ self.onmessage = (e) => {
       }
       sceneSpace.scale = (1 + 1e-6) // prevents HashGrid.findVoxelIndex from returning out of bounds when the point is on the edge
 
-      densityHashGrid = new density.HashGrid(sceneSpace);
+      const densityHashGrid = new density.HashGrid(sceneSpace);
       for (let i = vertexCount; i-- > 0;) {
         const p = positions.slice(3 * i, 3 * i + 3);
         const voxel = densityHashGrid.findVoxel(p);
@@ -283,8 +281,7 @@ self.onmessage = (e) => {
         }
       }
 
-      self.postMessage({ density: densityHashGrid });
-
+      self.postMessage(densityHashGrid.toMessage());
     } finally {
       console.timeEnd("Density");
     }
