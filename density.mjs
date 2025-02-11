@@ -31,7 +31,7 @@ export class Voxel {
 }
 
 export class HashGrid {
-    static numberVoxel = [1, 1, 1].map(k => k * 2)
+    static numberVoxel = [16, 16, 16]
 
     /** @type {Space}*/space
     /** @type {Voxel[][][]}*/voxels
@@ -45,7 +45,7 @@ export class HashGrid {
     }
 
     findVoxelIndex(position) {
-        return position.map((k, i) => Math.floor((k - this.space.min[i]) * (HashGrid.numberVoxel[i]) / (this.space.max[i] - this.space.min[i])))
+        return position.map((k, i) => Math.floor((k - this.space.min[i]) * HashGrid.numberVoxel[i] / (this.space.max[i] - this.space.min[i])))
     }
 
     findVoxel(position) {
@@ -67,57 +67,6 @@ export class HashGrid {
                             this.space.max.map((max, dim) => this.space.min[dim] + ([i, j, k][dim] + 1) * this.voxelSize[dim])
                         )
                     );
-                }
-            }
-        }
-    }
-
-    toMessage() {
-        return new DensityColor(this);
-    }
-}
-
-export class DensityColor {
-    constructor(hashgrid) {
-        this.density = {
-            /** @type {number[]} */
-            values: new Array(hashgrid.voxelVolume),
-            min: Infinity,
-            max: -Infinity,
-        };
-        this.color = {
-            /** @type {number[]} */
-            values: new Array(hashgrid.voxelVolume),
-            min: [300, 1., .1], //hsl
-            max: [60., 1., .5], //hsl
-        };
-
-        let { density, color } = this
-        {
-            let flatIndex = 0
-            for (let i of hashgrid.voxels) {
-                for (let j of i) {
-                    for (let k of j) {
-                        density.values[flatIndex++] = k.density;
-                        density.min = Math.min(density.min, k.density);
-                        density.max = Math.max(density.max, k.density);
-                    }
-                }
-            }
-        }
-
-        {
-            let flatIndex = 0
-            for (let i of hashgrid.voxels) {
-                for (let j of i) {
-                    for (let k of j) {
-                        color.values[flatIndex++] = vec3.lerp(
-                            vec3.create(),
-                            color.min,
-                            color.max,
-                            (k.density - density.min) / (density.max - density.min)
-                        );
-                    }
                 }
             }
         }

@@ -29,6 +29,4 @@ export const ShaderHeader = /*glsl*/ `
   };
   
   const ColorMap colorMap = ColorMap(vec4(1,0,0,1), vec4(0,0,1,1), vec4(1));
-
-  #line 1
 `.trim();

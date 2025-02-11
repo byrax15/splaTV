@@ -1,8 +1,9 @@
 import { ShaderHeader } from "./splat.glsl.mjs";
-import { DisplayMode } from "./display-mode.mjs";
+import { DisplayMode } from "../display-mode.mjs";
 
 export const vertexShaderSource = /* glsl */ `
 ${ShaderHeader}
+#line 7
 
 uniform highp usampler2D u_texture;
 uniform mat4 projection, view;
@@ -13,6 +14,10 @@ uniform Range camDistCull;
 uniform Range opacityCull;
 uniform AABB aabbCull;
 
+uniform ivec3 voxelNumber;
+uniform AABB voxelSpace;
+uniform highp sampler2D voxelColors;
+
 in vec2 position;
 in int index;
 
@@ -20,6 +25,15 @@ out vec4 vColor;
 out vec2 vPosition;
 flat out vec2 vCenter;
 out float vCamDist;
+
+ivec2 voxelIndex(vec3 position) {
+    ivec3 id3d= ivec3((position-voxelSpace.min) * vec3(voxelNumber) / (voxelSpace.max-voxelSpace.min));
+    return ivec2(id3d.z + id3d.y * voxelNumber.z + id3d.x * voxelNumber.z * voxelNumber.y, 0);
+}
+
+vec3 voxelColor(vec3 position) {
+    return texelFetch(voxelColors, voxelIndex(position), 0).rgb;
+}
 
 void main () {
     gl_Position = vec4(0.0, 0.0, 2.0, 1.0);
@@ -89,6 +103,15 @@ void main () {
     vec2 majorAxis = min(sqrt(2.0 * lambda1), 1024.0) * diagonalVector;
     vec2 minorAxis = min(sqrt(2.0 * lambda2), 1024.0) * vec2(diagonalVector.y, -diagonalVector.x);
     
+    vec2 vCenter = vec2(pos) / pos.w;
+    gl_Position = vec4(
+        vCenter 
+        + position.x * majorAxis / viewport 
+        + position.y * minorAxis / viewport, 0.0, 1.0);
+
+    vPosition = vCenter = position; 
+    vCamDist = 1./(camDist);
+
     uint rgba = static1.w;
     vColor 
     = clamp(pos.z/pos.w+1.0, 0.0, 1.0) 
@@ -101,6 +124,9 @@ void main () {
     / 255.0;
     
     switch (displayMode) {
+    case ${DisplayMode.Density}:
+        vColor.xyz = voxelColor(tpos.xyz);
+        break;
     case ${DisplayMode.TPos}:
         vColor.xyz = mix(colorMap.far,colorMap.close,length(tpos.xyz)).xyz;
         break;
@@ -117,14 +143,5 @@ void main () {
         vColor.xyz = mix(colorMap.close,colorMap.far,normalize(trot).w).xyz;
         break;
     }
-
-    vec2 vCenter = vec2(pos) / pos.w;
-    gl_Position = vec4(
-        vCenter 
-        + position.x * majorAxis / viewport 
-        + position.y * minorAxis / viewport, 0.0, 1.0);
-
-    vPosition = vCenter = position; 
-    vCamDist = 1./(camDist);
 }
 `.trim();

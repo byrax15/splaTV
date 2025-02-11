@@ -1,8 +1,9 @@
 import { ShaderHeader } from './splat.glsl.mjs'
-import { DisplayMode } from './display-mode.mjs'
+import { DisplayMode } from '../display-mode.mjs'
 
 export const fragShaderSource = /* glsl */`
   ${ShaderHeader}
+  #line 7
 
   uniform Range radiusCull;
 

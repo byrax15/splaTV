@@ -1,6 +1,6 @@
 import * as density from "./density.mjs";
 import { DisplayMode } from "./display-mode.mjs";
-import { hslToRgb } from "./vector.mjs";
+import { vec3, hslToRgb } from "./vector.mjs";
 
 let cameras = [
   {
@@ -20,19 +20,17 @@ let cameras = [
 ];
 
 let camera = cameras[0];
-let densityHashGrid;
-
 
 const vertexShaderSource = (async () => {
-  const mod = await import('./splat.vert.mjs')
+  const mod = await import('./shaders/splat.vert.mjs')
   return mod.vertexShaderSource
-})()
+})();
 
 
 const fragmentShaderSource = (async () => {
-  const mod = await import('./splat.frag.mjs')
+  const mod = await import('./shaders/splat.frag.mjs')
   return mod.fragShaderSource
-})()
+})();
 
 let defaultViewMatrix = [0.99, 0.01, -0.14, 0, 0.02, 0.99, 0.12, 0, 0.14, -0.12, 0.98, 0, -0.09, -0.26, 0.2, 1];
 
@@ -61,6 +59,7 @@ async function main() {
 
   let projectionMatrix;
 
+  /** @type {WebGL2RenderingContext} */
   const gl = canvas.getContext("webgl2", {
     antialias: false,
   });
@@ -68,12 +67,14 @@ async function main() {
   const vertexShader = gl.createShader(gl.VERTEX_SHADER);
   gl.shaderSource(vertexShader, await vertexShaderSource);
   gl.compileShader(vertexShader);
-  if (!gl.getShaderParameter(vertexShader, gl.COMPILE_STATUS)) console.error(gl.getShaderInfoLog(vertexShader));
+  if (!gl.getShaderParameter(vertexShader, gl.COMPILE_STATUS))
+    console.error(gl.getShaderInfoLog(vertexShader));
 
   const fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
   gl.shaderSource(fragmentShader, await fragmentShaderSource);
   gl.compileShader(fragmentShader);
-  if (!gl.getShaderParameter(fragmentShader, gl.COMPILE_STATUS)) console.error(gl.getShaderInfoLog(fragmentShader));
+  if (!gl.getShaderParameter(fragmentShader, gl.COMPILE_STATUS))
+    console.error(gl.getShaderInfoLog(fragmentShader));
 
   const program = gl.createProgram();
   gl.attachShader(program, vertexShader);
@@ -81,7 +82,8 @@ async function main() {
   gl.linkProgram(program);
   gl.useProgram(program);
 
-  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) console.error(gl.getProgramInfoLog(program));
+  if (!gl.getProgramParameter(program, gl.LINK_STATUS))
+    console.error(gl.getProgramInfoLog(program));
 
   gl.disable(gl.DEPTH_TEST); // Disable depth testing
 
@@ -98,22 +100,27 @@ async function main() {
   const u_camDistCull = {
     min: gl.getUniformLocation(program, "camDistCull.min"),
     max: gl.getUniformLocation(program, "camDistCull.max"),
-  }
+  };
   const u_displayMode = gl.getUniformLocation(program, "displayMode")
   const u_radiusCull = {
     min: gl.getUniformLocation(program, "radiusCull.min"),
     max: gl.getUniformLocation(program, "radiusCull.max"),
   };
-
   const u_opacityCull = {
     min: gl.getUniformLocation(program, "opacityCull.min"),
     max: gl.getUniformLocation(program, "opacityCull.max"),
-  }
-
+  };
   const u_aabbCull = {
     min: gl.getUniformLocation(program, "aabbCull.min"),
     max: gl.getUniformLocation(program, "aabbCull.max"),
-  }
+  };
+  const u_voxel = {
+    number: gl.getUniformLocation(program, "voxelNumber"),
+    space: {
+      min: gl.getUniformLocation(program, "voxelSpace.min"),
+      max: gl.getUniformLocation(program, "voxelSpace.max"),
+    },
+  };
 
   // positions
   const triangleVertices = new Float32Array([-2, -2, 2, -2, 2, 2, -2, 2]);
@@ -126,10 +133,12 @@ async function main() {
   gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
 
   var texture = gl.createTexture();
-  gl.bindTexture(gl.TEXTURE_2D, texture);
-
   var u_textureLocation = gl.getUniformLocation(program, "u_texture");
   gl.uniform1i(u_textureLocation, 0);
+
+  const texDensity = gl.createTexture();
+  const u_voxelColors = gl.getUniformLocation(program, "voxelColors");
+  gl.uniform1i(u_voxelColors, 1);
 
   const indexBuffer = gl.createBuffer();
   const a_index = gl.getAttribLocation(program, "index");
@@ -184,35 +193,35 @@ async function main() {
       link.href = URL.createObjectURL(blob);
       document.body.appendChild(link);
       link.click();
-    } else if (e.data.depthIndex) {
+    }
+    else if (e.data.depthIndex) {
       const { depthIndex, viewProj } = e.data;
       gl.bindBuffer(gl.ARRAY_BUFFER, indexBuffer);
       gl.bufferData(gl.ARRAY_BUFFER, depthIndex, gl.DYNAMIC_DRAW);
       vertexCount = e.data.vertexCount;
     }
-    else if (['density', 'color'].every(k => k in e.data)) {
-      /** @type {density.DensityColor} */
-      let densityHashGrid = e.data;
-      console.log(densityHashGrid)
+    else if ('density' in e.data) {
+      console.log(e.data);
+      /** @type {{values: number[][][], colors: vec3[][][] , space:density.Space}} */
+      const { values, colors, space } = e.data;
+      const [x, y, z] = density.HashGrid.numberVoxel;
+      const flat = colors.flat(3);
 
-      for (let i = 0; i < densityHashGrid.density.values.length; i++) {
-        const density = densityHashGrid.density.values[i];
-        const color = densityHashGrid.color.values[i];
-        const [r, g, b] = hslToRgb(color);
-        splatData = new Uint8Array([...splatData, ...new Uint8Array(density), r, g, b, 255]);
-      }
+      gl.uniform3iv(u_voxel.number, density.HashGrid.numberVoxel);
+      gl.uniform3fv(u_voxel.space.min, space.min);
+      gl.uniform3fv(u_voxel.space.max, space.max);
 
-      for (let i = 0; i < densityHashGrid.density.values.length; i++) {
-        const density = densityHashGrid.density.values[i];
-        const color = densityHashGrid.color.values[i];
-        const div = document.createElement("div");
-        div.className = 'color-display';
-        const hsl = ((h, s, l) => `hsl(${h},${s * 100}%,${l * 100}%`)(...color);
-        div.style.backgroundColor = hsl;
-        div.textContent = density.toExponential(2);
-        document.querySelector("#message").appendChild(div);
-      }
-      setTimeout(() => document.querySelector("#message").innerText = "", 5000)
+      // create a no-mipmap 3d texture for the densities
+      gl.activeTexture(gl.TEXTURE1);
+      gl.bindTexture(gl.TEXTURE_2D, texDensity);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB32F,
+        x * y * z, 1, 0,
+        gl.RGB, gl.FLOAT, new Float32Array(flat));
+      console.log(gl.getError());
     }
   };
 
@@ -483,7 +492,8 @@ async function main() {
 
   const displayMode = new (class {
     mode = document.querySelector("select#draw-mode");
-    last = this.value;
+    /** @type {string} */ last = this.value;
+    /** @returns {string} */
     get value() { return this.mode.value; }
     set value(v) { return this.mode.value = v; }
 
@@ -492,8 +502,8 @@ async function main() {
     }
 
     swap() {
-      if (DisplayMode[this.value] === DisplayMode.Density) {
-        this.value = this.last
+      if (DisplayMode[this.value] === DisplayMode.Density
+        && DisplayMode[this.last] !== DisplayMode.Density) {
         worker.postMessage({ density: true })
       }
       this.last = this.value
@@ -709,7 +719,6 @@ async function main() {
       };
       fr.readAsText(file);
     } else {
-      stopLoading = true;
       fr.onload = () => {
         splatData = new Uint8Array(fr.result);
         console.log("Loaded", Math.floor(splatData.length / rowLength));
@@ -777,7 +786,6 @@ async function main() {
         console.log("splat", remaining);
 
         const texdata = new Uint32Array(buffer);
-        // console.log(texdata);
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, texture);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);

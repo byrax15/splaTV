@@ -1,4 +1,5 @@
 import * as density from "./density.mjs";
+import { vec3 } from "./vector.mjs";
 
 let sortRunning;
 let vertexCount = 0;
@@ -249,12 +250,14 @@ self.onmessage = (e) => {
     vertexCount = 0;
     vertexCount = processPlyBuffer(e.data.ply);
   }
-  else if (e.data.density) {
+  else if ('density' in e.data) {
     try {
       console.log("Density: Start");
       console.time("Density");
 
-      if (!positions) console.log(`Density: 0 gausians in 0 voxels`);
+      if (!positions)
+        console.log(`Density: 0 gausians in 0 voxels`);
+
       let sceneSpace = new density.Space([Infinity, Infinity, Infinity], [-Infinity, -Infinity, -Infinity])
       for (let i = vertexCount; i-- > 0;) {
         const p = positions.slice(3 * i, 3 * i + 3);
@@ -264,24 +267,26 @@ self.onmessage = (e) => {
       sceneSpace.scale = (1 + 1e-6) // prevents HashGrid.findVoxelIndex from returning out of bounds when the point is on the edge
 
       const densityHashGrid = new density.HashGrid(sceneSpace);
+      let min = Infinity, max = -Infinity;
       for (let i = vertexCount; i-- > 0;) {
         const p = positions.slice(3 * i, 3 * i + 3);
         const voxel = densityHashGrid.findVoxel(p);
         ++voxel.numGaussians;
+        min = Math.min(min, voxel.density);
+        max = Math.max(max, voxel.density);
       }
-
-      console.log("Density", densityHashGrid)
-      const [x, y, z] = density.HashGrid.numberVoxel
-      for (let i = 0; i < x; ++i) {
-        for (let j = 0; j < y; ++j) {
-          for (let k = 0; k < z; ++k) {
-            const voxel = densityHashGrid.voxels[i][j][k];
-            console.log("Density", [i, j, k], { ...voxel, density: voxel.density });
-          }
-        }
-      }
-
-      self.postMessage(densityHashGrid.toMessage());
+      self.postMessage({
+        density: true,
+        values: densityHashGrid.voxels.map(i => i.map(j => j.map(k => k.density))),
+        colors: densityHashGrid.voxels.map(i => i.map(j => j.map(k => vec3.lerp(
+          vec3.create(),
+          [0., 0., 1.],
+          [1., 1., 0.],
+          (k.density - min) / (max - min),
+        )))),
+        space: sceneSpace,
+        range: { min, max },
+      });
     } finally {
       console.timeEnd("Density");
     }
