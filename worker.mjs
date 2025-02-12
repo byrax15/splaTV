@@ -264,7 +264,7 @@ self.onmessage = (e) => {
         sceneSpace.min.forEach((k, i) => sceneSpace.min[i] = Math.min(k, p[i]));
         sceneSpace.max.forEach((k, i) => sceneSpace.max[i] = Math.max(k, p[i]));
       }
-      sceneSpace.scale = (1 + 1e-6) // prevents HashGrid.findVoxelIndex from returning out of bounds when the point is on the edge
+      sceneSpace.scale = 1 + 1e-6 // prevents HashGrid.findVoxelIndex from returning out of bounds when the point is on the edge
 
       const densityHashGrid = new density.HashGrid(sceneSpace);
       let min = Infinity, max = -Infinity;
@@ -275,14 +275,17 @@ self.onmessage = (e) => {
         min = Math.min(min, voxel.density);
         max = Math.max(max, voxel.density);
       }
+
+      const blend = densityHashGrid.voxels.map(i => i.map(j => j.map(k => (k.density - min) / (max - min))));
       self.postMessage({
         density: true,
         values: densityHashGrid.voxels.map(i => i.map(j => j.map(k => k.density))),
-        colors: densityHashGrid.voxels.map(i => i.map(j => j.map(k => vec3.lerp(
+        blend,
+        colors: blend.map(i => i.map(j => j.map(k => vec3.lerp(
           vec3.create(),
           [0., 0., 1.],
           [1., 1., 0.],
-          (k.density - min) / (max - min),
+          k,
         )))),
         space: sceneSpace,
         range: { min, max },

@@ -202,10 +202,17 @@ async function main() {
     }
     else if ('density' in e.data) {
       console.log(e.data);
-      /** @type {{values: number[][][], colors: vec3[][][] , space:density.Space}} */
-      const { values, colors, space } = e.data;
+      /** @type {{values: number[][][], blend:number[][][], colors: vec3[][][], space:density.Space}} */
+      const { values, blend, colors, space } = e.data;
       const [x, y, z] = density.HashGrid.numberVoxel;
-      const flat = colors.flat(3);
+
+      const maxTexSize = gl.getParameter(gl.MAX_TEXTURE_SIZE);
+      if (x * y * z > maxTexSize) {
+        const err = `Density grid size (${density.HashGrid.numberVoxel}) > gl.MAX_TEXTURE_SIZE (${maxTexSize})`;
+        console.log(err);
+        document.getElementById("message").innerText = err;
+        return;
+      }
 
       gl.uniform3iv(u_voxel.number, density.HashGrid.numberVoxel);
       gl.uniform3fv(u_voxel.space.min, space.min);
@@ -220,8 +227,8 @@ async function main() {
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB32F,
         x * y * z, 1, 0,
-        gl.RGB, gl.FLOAT, new Float32Array(flat));
-      console.log(gl.getError());
+        gl.RGB, gl.FLOAT, new Float32Array(colors.flat(3)));
+      console.log("Density", gl.getError());
     }
   };
 

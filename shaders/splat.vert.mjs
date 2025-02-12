@@ -26,13 +26,13 @@ out vec2 vPosition;
 flat out vec2 vCenter;
 out float vCamDist;
 
-ivec2 voxelIndex(vec3 position) {
-    ivec3 id3d= ivec3((position-voxelSpace.min) * vec3(voxelNumber) / (voxelSpace.max-voxelSpace.min));
-    return ivec2(id3d.z + id3d.y * voxelNumber.z + id3d.x * voxelNumber.z * voxelNumber.y, 0);
+int voxelIndex(vec3 position) {
+    ivec3 id3d= ivec3(floor((position-voxelSpace.min) * vec3(voxelNumber) / (voxelSpace.max-voxelSpace.min)));
+    return id3d.z + id3d.y * voxelNumber.z + id3d.x * voxelNumber.z * voxelNumber.y;
 }
 
 vec3 voxelColor(vec3 position) {
-    return texelFetch(voxelColors, voxelIndex(position), 0).rgb;
+    return texelFetch(voxelColors, ivec2(voxelIndex(position),0), 0).rgb;
 }
 
 void main () {
@@ -125,7 +125,7 @@ void main () {
     
     switch (displayMode) {
     case ${DisplayMode.Density}:
-        vColor.xyz = voxelColor(tpos.xyz);
+        vColor.xyz = voxelColor(anchor.xyz+tpos.xyz);
         break;
     case ${DisplayMode.TPos}:
         vColor.xyz = mix(colorMap.far,colorMap.close,length(tpos.xyz)).xyz;

@@ -31,7 +31,7 @@ export class Voxel {
 }
 
 export class HashGrid {
-    static numberVoxel = [16, 16, 16]
+    static numberVoxel = [32,16,32]
 
     /** @type {Space}*/space
     /** @type {Voxel[][][]}*/voxels
