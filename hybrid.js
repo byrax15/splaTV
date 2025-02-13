@@ -20,6 +20,7 @@ let cameras = [
 ];
 
 let camera = cameras[0];
+let hashgrid = new density.HashGrid(new density.Space([0, 0, 0], [0, 0, 0]));
 
 const vertexShaderSource = (async () => {
   const mod = await import('./shaders/splat.vert.mjs')
@@ -201,17 +202,25 @@ async function main() {
       vertexCount = e.data.vertexCount;
     }
     else if ('density' in e.data) {
-      console.log(e.data);
-      /** @type {{values: number[][][], blend:number[][][], colors: vec3[][][], space:density.Space}} */
-      const { values, blend, colors, space } = e.data;
-      const [x, y, z] = density.HashGrid.numberVoxel;
+      hashgrid = density.HashGrid.from(e.data.density);
+      const { space } = hashgrid;
+      const { colors } = e.data;
 
-      const maxTexSize = gl.getParameter(gl.MAX_TEXTURE_SIZE);
-      if (x * y * z > maxTexSize) {
-        const err = `Density grid size (${density.HashGrid.numberVoxel}) > gl.MAX_TEXTURE_SIZE (${maxTexSize})`;
-        console.log(err);
-        document.getElementById("message").innerText = err;
+      const maxTexSize = gl.getParameter(gl.MAX_3D_TEXTURE_SIZE);
+      if (density.HashGrid.numberVoxel.some(d => d > maxTexSize)) {
         return;
+      }
+
+      const [x, y, z] = density.HashGrid.numberVoxel;
+      const colorsT = new Float32Array(density.HashGrid.voxelVolume * 3);
+      // copy colors to colorsT, transposed and flattened
+      for (let i = 0; i < x; i++) {
+        for (let j = 0; j < y; j++) {
+          for (let k = 0; k < z; k++) {
+            const idx = 3 * (i * y * z + j * z + k);
+            colorsT.set(colors[k][j][i], idx);
+          }
+        }
       }
 
       gl.uniform3iv(u_voxel.number, density.HashGrid.numberVoxel);
@@ -220,15 +229,17 @@ async function main() {
 
       // create a no-mipmap 3d texture for the densities
       gl.activeTexture(gl.TEXTURE1);
-      gl.bindTexture(gl.TEXTURE_2D, texDensity);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB32F,
-        x * y * z, 1, 0,
-        gl.RGB, gl.FLOAT, new Float32Array(colors.flat(3)));
-      console.log("Density", gl.getError());
+      gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+      gl.pixelStorei(gl.PACK_ALIGNMENT, 1);
+      gl.bindTexture(gl.TEXTURE_3D, texDensity);
+      gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_WRAP_R, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+      gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+      gl.texImage3D(gl.TEXTURE_3D, 0, gl.RGB32F,
+        x, y, z, 0,
+        gl.RGB, gl.FLOAT, colorsT);
     }
   };
 
@@ -497,6 +508,12 @@ async function main() {
     }
   }
 
+  const voxelNumber = {
+    uploadUniform() {
+      gl.uniform3iv(u_voxel.number, density.HashGrid.numberVoxel);
+    }
+  }
+
   const displayMode = new (class {
     mode = document.querySelector("select#draw-mode");
     /** @type {string} */ last = this.value;
@@ -509,11 +526,15 @@ async function main() {
     }
 
     swap() {
-      if (DisplayMode[this.value] === DisplayMode.Density
-        && DisplayMode[this.last] !== DisplayMode.Density) {
-        worker.postMessage({ density: true })
+      switch (DisplayMode[this.value]) {
+        case DisplayMode.Density:
+        case DisplayMode.VoxelId:
+          if (DisplayMode[this.last] !== DisplayMode[this.value]) {
+            worker.postMessage({ density: true });
+          }
+          break;
       }
-      this.last = this.value
+      this.last = this.value;
     }
   })();
 
@@ -533,13 +554,14 @@ async function main() {
   }
 
   const frame = (now) => {
-    minMaxRange.uploadUniform()
-    radiusCullRange.uploadUniform()
-    opacityCullRange.uploadUniform()
-    aabbCull.uploadUniform()
+    minMaxRange.uploadUniform();
+    radiusCullRange.uploadUniform();
+    opacityCullRange.uploadUniform();
+    aabbCull.uploadUniform();
+    voxelNumber.uploadUniform();
 
-    displayMode.uploadUniform()
-    displayMode.swap()
+    displayMode.uploadUniform();
+    displayMode.swap();
 
     let inv = invert4(viewMatrix);
     let shiftKey = activeKeys.includes("Shift") || activeKeys.includes("ShiftLeft") || activeKeys.includes("ShiftRight");

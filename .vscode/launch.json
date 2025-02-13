@@ -2,9 +2,15 @@
     "configurations": [
         {
             "type": "msedge",
-            "name": "localhost:5500",
+            "name": "edge: localhost:5500",
             "request": "launch",
             "url": "http://localhost:5500"
-        }
+        },
+        {
+            "type": "firefox",
+            "name": "firefox: localhost:5500",
+            "request": "launch",
+            "url": "http://localhost:5500"
+        },
     ]
 }

@@ -16,7 +16,7 @@ uniform AABB aabbCull;
 
 uniform ivec3 voxelNumber;
 uniform AABB voxelSpace;
-uniform highp sampler2D voxelColors;
+uniform highp sampler3D voxelColors;
 
 in vec2 position;
 in int index;
@@ -26,13 +26,17 @@ out vec2 vPosition;
 flat out vec2 vCenter;
 out float vCamDist;
 
-int voxelIndex(vec3 position) {
+// int
+ivec3
+voxelIndex(vec3 position) {
     ivec3 id3d= ivec3(floor((position-voxelSpace.min) * vec3(voxelNumber) / (voxelSpace.max-voxelSpace.min)));
-    return id3d.z + id3d.y * voxelNumber.z + id3d.x * voxelNumber.z * voxelNumber.y;
+    // return id3d.z + id3d.y * voxelNumber.z + id3d.x * voxelNumber.z * voxelNumber.y;
+    return id3d;
 }
 
 vec3 voxelColor(vec3 position) {
-    return texelFetch(voxelColors, ivec2(voxelIndex(position),0), 0).rgb;
+    // return texelFetch(voxelColors, ivec2(voxelIndex(position),0), 0).rgb;
+    return texelFetch(voxelColors, voxelIndex(position), 0).rgb;
 }
 
 void main () {
@@ -124,6 +128,9 @@ void main () {
     / 255.0;
     
     switch (displayMode) {
+    case ${DisplayMode.VoxelId}:
+        vColor.xyz = vec3(voxelIndex(anchor.xyz) + 1) / vec3(voxelNumber);
+        break;
     case ${DisplayMode.Density}:
         vColor.xyz = voxelColor(anchor.xyz+tpos.xyz);
         break;

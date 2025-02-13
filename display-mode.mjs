@@ -3,6 +3,7 @@ export class DisplayMode {
     static Depth = 1
     static Opaque = 2
     static Density = 3
+    static VoxelId = 4
   
     static TPos = 10
     static TRotX = 11

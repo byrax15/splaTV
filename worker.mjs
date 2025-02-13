@@ -1,5 +1,5 @@
 import * as density from "./density.mjs";
-import { vec3 } from "./vector.mjs";
+import { mix, vec3 } from "./vector.mjs";
 
 let sortRunning;
 let vertexCount = 0;
@@ -254,42 +254,31 @@ self.onmessage = (e) => {
     try {
       console.log("Density: Start");
       console.time("Density");
-
       if (!positions)
         console.log(`Density: 0 gausians in 0 voxels`);
 
-      let sceneSpace = new density.Space([Infinity, Infinity, Infinity], [-Infinity, -Infinity, -Infinity])
-      for (let i = vertexCount; i-- > 0;) {
-        const p = positions.slice(3 * i, 3 * i + 3);
-        sceneSpace.min.forEach((k, i) => sceneSpace.min[i] = Math.min(k, p[i]));
-        sceneSpace.max.forEach((k, i) => sceneSpace.max[i] = Math.max(k, p[i]));
-      }
-      sceneSpace.scale = 1 + 1e-6 // prevents HashGrid.findVoxelIndex from returning out of bounds when the point is on the edge
+      /** @type {density.HashGrid} */
+      const densityHashGrid = new density.HashGrid;
+      densityHashGrid.space.setMinMax(vertexCount, positions);
+      densityHashGrid.space.scale = 1 + 1e-6 // prevents HashGrid.findVoxelIndex from returning out of bounds when the point is on the edge
+      densityHashGrid.resizeVoxels();
+      densityHashGrid.countGaussians(vertexCount, positions);
 
-      const densityHashGrid = new density.HashGrid(sceneSpace);
-      let min = Infinity, max = -Infinity;
-      for (let i = vertexCount; i-- > 0;) {
-        const p = positions.slice(3 * i, 3 * i + 3);
-        const voxel = densityHashGrid.findVoxel(p);
-        ++voxel.numGaussians;
-        min = Math.min(min, voxel.density);
-        max = Math.max(max, voxel.density);
-      }
-
-      const blend = densityHashGrid.voxels.map(i => i.map(j => j.map(k => (k.density - min) / (max - min))));
-      self.postMessage({
-        density: true,
-        values: densityHashGrid.voxels.map(i => i.map(j => j.map(k => k.density))),
-        blend,
-        colors: blend.map(i => i.map(j => j.map(k => vec3.lerp(
-          vec3.create(),
+      const { min, max } = densityHashGrid.density;
+      const blend = densityHashGrid.voxels.map(i => i.map(j => j.map(k => {
+        const b = (k.density - min) / (max - min);
+        return 1 - (1 - b) * (1 - b);
+      })));
+      const message = {
+        density: densityHashGrid,
+        colors: blend.map(i => i.map(j => j.map(k => mix(
           [0., 0., 1.],
-          [1., 1., 0.],
+          [0., 1., 0.],
           k,
         )))),
-        space: sceneSpace,
-        range: { min, max },
-      });
+      };
+      console.log(message);
+      self.postMessage(message);
     } finally {
       console.timeEnd("Density");
     }

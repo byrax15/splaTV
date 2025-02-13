@@ -37,3 +37,7 @@ export function hslToRgb(hsl) {
     return [r, g, b];
 }
 
+export function mix(x, y, a) {
+    return x.map((_, i) => x[i] * (1 - a) + y[i] * a);
+}
+
