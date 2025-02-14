@@ -9,21 +9,8 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 
+  <script type="module" src="hybrid.js" defer></script>
   <script type="module" defer>
-    import { DisplayMode } from './display-mode.mjs';
-    window.DisplayMode = DisplayMode;
-
-    {
-      /** @type {HTMLSelectElement} */
-      const drawModeSelect = document.querySelector('select#draw-mode');
-      for (const name in DisplayMode) {
-        const option = document.createElement('option');
-        option.value = name;
-        option.textContent = name;
-        drawModeSelect.appendChild(option);
-      }
-    }
-
     /**
      * @param {string} element
      * @param {string} a
@@ -36,8 +23,18 @@
         element = a;
       }
     }
+
+    /**
+     * @param {HTMLSelectElement} select
+     * @param {string} key
+     */
+    window.addToUrl = function (select, key) {
+      const value = select.value;
+      const url = new URL(location.href);
+      url.searchParams.set(key, value);
+      history.pushState({}, '', url);
+    }
   </script>
-  <script type="module" src="hybrid.js" defer></script>
 </head>
 
 <body>
@@ -75,7 +72,7 @@
     </fieldset>
     <fieldset>
       <legend>Display Mode</legend>
-      <select id="draw-mode"></select>
+      <select id="draw-mode" oninput="addToUrl(this, 'DisplayMode')"></select>
     </fieldset>
     <fieldset class="timeline">
       <legend>Timeline</legend>

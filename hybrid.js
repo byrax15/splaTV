@@ -213,12 +213,12 @@ async function main() {
 
       const [x, y, z] = density.HashGrid.numberVoxel;
       const colorsT = new Float32Array(density.HashGrid.voxelVolume * 3);
-      // copy colors to colorsT, transposed and flattened
       for (let i = 0; i < x; i++) {
         for (let j = 0; j < y; j++) {
           for (let k = 0; k < z; k++) {
             const idx = 3 * (i * y * z + j * z + k);
             colorsT.set(colors[k][j][i], idx);
+            // colorsT.set([k, j, i].map((d, chan) => (d + 1) / density.HashGrid.numberVoxel[chan]), idx);
           }
         }
       }
@@ -227,7 +227,6 @@ async function main() {
       gl.uniform3fv(u_voxel.space.min, space.min);
       gl.uniform3fv(u_voxel.space.max, space.max);
 
-      // create a no-mipmap 3d texture for the densities
       gl.activeTexture(gl.TEXTURE1);
       gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
       gl.pixelStorei(gl.PACK_ALIGNMENT, 1);
@@ -516,7 +515,7 @@ async function main() {
 
   const displayMode = new (class {
     mode = document.querySelector("select#draw-mode");
-    /** @type {string} */ last = this.value;
+    /** @type {string} */ last = Object.keys(DisplayMode)[0];
     /** @returns {string} */
     get value() { return this.mode.value; }
     set value(v) { return this.mode.value = v; }
@@ -734,6 +733,20 @@ async function main() {
   };
 
   frame();
+
+  // wait for a first frame to be drawn, as there seems to be a hidden dependency computed by Color pass
+  setTimeout(() => {
+    const DISPLAY_MODE = params.get('DisplayMode') ?? Object.keys(DisplayMode)[0];
+    /** @type {HTMLSelectElement} */
+    const drawModeSelect = document.querySelector('select#draw-mode');
+    for (const name in DisplayMode) {
+      const option = document.createElement('option');
+      option.value = name;
+      option.textContent = name;
+      option.selected = name === DISPLAY_MODE;
+      drawModeSelect.appendChild(option);
+    }
+  }, 500);
 
   const selectFile = (file) => {
     const fr = new FileReader();

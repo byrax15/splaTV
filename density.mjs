@@ -60,7 +60,7 @@ export class Voxel {
 }
 
 export class HashGrid {
-    static numberVoxel = [32,32,32]
+    static numberVoxel = [4,4,4]
     static get voxelVolume() { return HashGrid.numberVoxel.reduce((a, b) => a * b, 1); }
 
     /** @type {Space}*/ space = new Space([0, 0, 0], [0, 0, 0]);
