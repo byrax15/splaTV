@@ -95,6 +95,13 @@
       <button id="forward" disabled onclick="document.querySelector('#timeline').value-=-0.05">⏩</button>
       <input id="timeline" disabled type="range" min="0" max="1" step="1e-6" />
     </fieldset>
+    <fieldset id="density-gradient" class="gradient">
+      <Legend>Density Map (Density = #Gaussians in Voxel)</Legend>
+      <label for="density-color-min" style="grid-area: minl;">Min</label>
+      <input id="density-color-min" style="grid-area: mini;" type="number" disabled />
+      <label for="density-color-max" style="grid-area: maxl;">Max</label>
+      <input id="density-color-max" style="grid-area: maxi;" type="number" disabled />
+    </fieldset>
   </div>
   <div id="bottom-toolbar" class="toolbar" style="bottom: 0px;">
     <fieldset>
@@ -346,6 +353,12 @@
     display: grid;
     grid-template: "1fr" "1fr" "1fr" "1fr";
     padding: 3px;
+  }
+
+  .gradient {
+    display: grid;
+    grid-template-areas: "minl mini . maxl maxi";
+    background: linear-gradient(to right, var(--gradient-min), var(--gradient-max));
   }
 </style>
 

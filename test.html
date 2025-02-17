@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body class="gradient" data-min="255,0,0" data-max="0,0,255">
+
+</body>
+<style>
+    .gradient[data-min][data-max] {
+        background: linear-gradient(to right, rgb(attr(data-min)), rgb(attr(data-max)));
+    }
+</style>
+
+</html>

@@ -1,6 +1,5 @@
 import * as density from "./density.mjs";
 import { DisplayMode } from "./display-mode.mjs";
-import { vec3, hslToRgb } from "./vector.mjs";
 
 let cameras = [
   {
@@ -520,6 +519,12 @@ async function main() {
     get value() { return this.mode.value; }
     set value(v) { return this.mode.value = v; }
 
+    #densityUi = {
+      gradient: document.getElementById("density-gradient"),
+      min: document.getElementById("density-color-min"),
+      max: document.getElementById("density-color-max"),
+    }
+
     uploadUniform() {
       gl.uniform1i(u_displayMode, DisplayMode[this.value])
     }
@@ -531,6 +536,18 @@ async function main() {
           if (DisplayMode[this.last] !== DisplayMode[this.value]) {
             worker.postMessage({ density: true });
           }
+          break;
+      }
+      switch (DisplayMode[this.value]) {
+        case DisplayMode.Density:
+          this.#densityUi.gradient.style.display = "";
+          this.#densityUi.gradient.style.setProperty("--gradient-min", `rgb(${density.HashGrid.colorMap.min.map(chan=>chan*255)})`);
+          this.#densityUi.gradient.style.setProperty("--gradient-max", `rgb(${density.HashGrid.colorMap.max.map(chan=>chan*255)})`);
+          this.#densityUi.min.value = hashgrid.density.min;
+          this.#densityUi.max.value = hashgrid.density.max;
+          break;
+        default:
+          this.#densityUi.gradient.style.display = "none";
           break;
       }
       this.last = this.value;

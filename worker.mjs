@@ -266,14 +266,15 @@ self.onmessage = (e) => {
 
       const { min, max } = densityHashGrid.density;
       const blend = densityHashGrid.voxels.map(i => i.map(j => j.map(k => {
-        const b = (k.density - min) / (max - min);
-        return 1 - (1 - b) * (1 - b);
+        return (k.density - min) / (max - min);
+        // const b = (k.density - min) / (max - min);
+        // return 1 - (1 - b) * (1 - b);
       })));
       const message = {
         density: densityHashGrid,
         colors: blend.map(i => i.map(j => j.map(k => mix(
-          [0., 0., 1.],
-          [0., 1., 0.],
+          density.HashGrid.colorMap.min,
+          density.HashGrid.colorMap.max,
           k,
         )))),
       };
