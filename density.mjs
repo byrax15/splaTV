@@ -60,7 +60,7 @@ export class Voxel {
 }
 
 export class HashGrid {
-    static numberVoxel = [4, 4, 4]
+    static numberVoxel = [32,16,32]
     static get voxelVolume() { return HashGrid.numberVoxel.reduce((a, b) => a * b, 1); }
     static colorMap = { min: [0, 0, 1], max: [0, 1, 0] }
 
